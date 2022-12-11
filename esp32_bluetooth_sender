@@ -1,0 +1,37 @@
+#include <BluetoothA2DPSource.h>
+#include <math.h> 
+#define c3_frequency  220 // частота в Герцах 
+
+//Передача музыки в Bluetooth осуществляется с использованием профиля передачи однонаправленного аудио A2DP
+BluetoothA2DPSource a2dp_source;
+
+// Профиль A2DP ESP32 поддерживает кодек SBC
+// Аудиопоток кодируется с помощью импульсно-кодовой модуляции
+
+int32_t get_data_channels(Frame *frame, int32_t channel_len)
+{
+    static double m_time = 0.0; // значение не теряется между вызовами функций
+    double m_amplitude = 20000.0;  // Амплитуда 
+    double m_deltaTime = 1.0 / 44100.0; // 44,1 кГц - частота дискретизации для SBC
+    double m_phase = 0.0;
+
+    // формируем двухканальный поток данных 
+    for (int sample = 0; sample < channel_len; ++sample)
+    {
+        double angle = TWO_PI * c3_frequency * m_time + m_phase;
+        frame[sample].channel1 = m_amplitude * sin(angle); 
+        frame[sample].channel2 = frame[sample].channel1;
+        m_time += m_deltaTime;
+    }
+    return channel_len;
+}
+
+void setup() {
+  a2dp_source.start("DENN Speaker", get_data_channels); // подключение гарнитуры и передача данных
+  a2dp_source.set_volume(70); // установка уровня громкости
+}
+
+void loop() {
+  // для предотвращения сторожевого таймера
+    delay(10);
+}
