@@ -1,0 +1,68 @@
+#include <BluetoothA2DPSource.h>
+#include <BluetoothSerial.h>
+#include <math.h> 
+
+#define c3_frequency  220 // частота в Герцах 
+#define BT_DISCOVER_TIME	10000  // время поиска устройств
+
+//Передача музыки в Bluetooth осуществляется с использованием профиля передачи однонаправленного аудио A2DP
+BluetoothA2DPSource a2dp_source;
+BluetoothSerial SerialBT;
+
+static bool btScanSync = true;
+
+// Генерируем двухканальный аудиопоток
+int32_t get_data_channels(Frame *frame, int32_t channel_len)
+{
+    static double m_time = 0.0; // значение не теряется между вызовами функций
+    double m_amplitude = 20000.0;  // Амплитуда 
+    double m_deltaTime = 1.0 / 44100.0; // 44,1 кГц - частота дискретизации для SBC
+    double m_phase = 0.0;
+
+    // формируем двухканальный поток данных 
+    for (int sample = 0; sample < channel_len; ++sample)
+    {
+        double angle = TWO_PI * c3_frequency * m_time + m_phase;
+        frame[sample].channel1 = m_amplitude * sin(angle); 
+        frame[sample].channel2 = frame[sample].channel1;
+        m_time += m_deltaTime;
+    }
+    return channel_len;
+}
+
+void setup() {
+Serial.begin(115200);
+SerialBT.begin("ESP32"); //активируем БТ модуль
+
+//сканирование устройств в области видимости
+if (btScanSync) {
+    Serial.println("Starting discover...");
+    BTScanResults *pResults = SerialBT.discover(BT_DISCOVER_TIME);
+    if (pResults)
+      pResults->dump(&Serial);
+    else
+      Serial.println("Error on BT Scan, no result!");
+}
+SerialBT.end(); //деактивируем модуль для последующего сопряжения с выбранным устройством
+Serial.println("enter name of device to connect...");
+
+while (Serial.available() == 0) {} //ожидание подачи данных в com-порт
+String str = Serial.readString();
+const char* device = str.c_str();
+Serial.println("You choose to connect with " + str);
+Serial.println("Connecting.....");
+
+// метод определяет повторное подключение к выбранному устройству при потере соединения
+a2dp_source.set_auto_reconnect(true); 
+a2dp_source.start(device, get_data_channels);  
+a2dp_source.set_volume(130);
+delay(5000);
+if (a2dp_source.is_connected()) {
+  Serial.println("Device is connected successfully!");
+}
+else Serial.println("Device isn't connected, try again.");
+}
+
+void loop() {
+    delay(100);
+}
