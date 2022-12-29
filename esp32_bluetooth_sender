@@ -49,6 +49,8 @@ Serial.println("enter name of device to connect...");
 while (Serial.available() == 0) {} //ожидание подачи данных в com-порт
 String str = Serial.readString();
 const char* device = str.c_str();
+Serial.println("You choose to connect with " + str);
+Serial.println("Connecting.....");
 
 // метод определяет повторное подключение к выбранному устройству при потере соединения
 a2dp_source.set_auto_reconnect(true); 
