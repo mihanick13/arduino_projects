@@ -5,7 +5,7 @@
 #define c3_frequency  220 // частота в Герцах 
 #define BT_DISCOVER_TIME  10000  // время поиска устройств
 
-//Передача музыки в Bluetooth осуществляется с использованием профиля передачи однонаправленного аудио A2DP
+//Аудиопередача осуществляется с использованием профиля A2DP
 BluetoothA2DPSource a2dp_source;
 BluetoothSerial SerialBT;
 
